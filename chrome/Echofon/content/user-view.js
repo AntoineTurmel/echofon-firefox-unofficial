@@ -263,7 +263,11 @@ function container(type)
 
 function getScrollBoxObject()
 {
+try{
   return $('scroll-container').boxObject.QueryInterface(Components.interfaces.nsIScrollBoxObject);
+}catch(ex){
+	return $('scroll-container').boxObject;
+}
 }
 
 function onActionMenuShowing()
