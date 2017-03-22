@@ -89,7 +89,11 @@ function messageDidDelete(msg)
 
 function getScrollBoxObject()
 {
+	try{
   return container.parentNode.boxObject.QueryInterface(Components.interfaces.nsIScrollBoxObject);
+	}catch(ex){
+  return container.parentNode.boxObject;
+}
 }
 
 function onScrollTweetBox(event)
