@@ -352,6 +352,7 @@ var EchofonCommon = {
 
     var elem = document.createElement("description");
     elem.className = "echofon-message-body";
+	elem.style.whiteSpace = "pre-wrap";
 
 
       var style = this.pref().getIntPref("displayStyle");
