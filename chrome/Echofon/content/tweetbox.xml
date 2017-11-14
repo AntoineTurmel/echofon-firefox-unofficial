@@ -182,7 +182,7 @@
             items = document.createElement('echofon-' + type + "-menu");
 	    menu.target = event.target;
 	  }
-	  else if (event.target.tagName == 'echofon-status' || event.target.parentNode.tagName == 'echofon-status') {
+	  else if (event.target.tagName == 'echofon-status' || event.target.closest('echofon-status')) {
             items = document.createElement('echofon-tweet-cell-menu');
             menu.target = this;
 	  }
@@ -249,184 +249,14 @@
         <xul:hbox flex="1" class="echofon-status-container">
 
           <!-- user icon -->
-          <xul:vbox>
-            <xul:box anonid="usericon" class="echofon-status-usericon" align="top" tooltip="echofon-user-tooltip" xbl:inherits="href"/>
-            <xul:spacer flex="1" />
-          </xul:vbox>
-
           <!-- messages -->
-          <xul:vbox class="echofon-status-message-container" flex="1">
-            <xul:description class="echofon-status-message">
-              <children />
-            </xul:description>
-            <xul:hbox class="echofon-status-info" crop="right" align="left">
-              <children includes="echofon-status-tagline"/>
-            </xul:hbox>
-            <xul:hbox class="echofon-status-info">
-              <children includes="echofon-status-retweet-status"/>
-            </xul:hbox>
-          </xul:vbox>
-
           <!-- function icons -->
-          <xul:vbox align="end" class="echofon-function-icon-box">
-            <xul:image anonid="favorite"
-                       class="echofon-status-favorite"
-                       onclick="toggleFavorite()"
-                       xbl:inherits="favorited, messageId, attr,type,tooltiptext=favoriteButtonTooltip,requestFavorite"/>
-            <xul:image anonid="reply"
-                       style="display:none;"
-                       class="echofon-status-reply"
-                       onclick="onReplyButton(this)"
-                       xbl:inherits="name=screen_name,messageId,attr,type,text,tooltiptext=replyButtonTooltip"/>
-          </xul:vbox>
-
           <!-- timeline photo -->
-          <xul:vbox flex="1">
-            <xul:stack onclick="openPhoto(event)" flex="1">
-              <xul:image anonid="thumbnail-photo" xbl:inherits="src=thumbnail-photo" class="echofon-status-photo"/>
-              <xul:hbox align="center">
-                <xul:spacer flex="1"/>
-                <xul:image anonid="video-playback-icon" class="echofon-status-video-playback-icon"/>
-                <xul:spacer flex="1"/>
-              </xul:hbox>
-            </xul:stack>
-          </xul:vbox>
+          <children />
 
         </xul:hbox>
       </xul:vbox>
     </content>
-
-    <implementation>
-
-      <constructor>
-        var icon = document.getAnonymousElementByAttribute(this, "anonid", "usericon");
-        icon.style.background = "url(" + this.user.profile_image_url + ")";
-        icon.user = this.user;
-
-        this.padding = 10 + 32 + 5 + 18 + 5; // left avator spacing icons right
-        if (this.pb) {
-          this.padding += 64;
-        }
-        if (this.getAttribute("user-timeline")) {
-          this.padding += 24;
-        }
-        else if (this.appMode != "window") {
-          this.padding  -= (8+5);
-          if (this.pb) {
-            this.padding -= 12;
-          }
-        }
-        if (!this.containerWidth) {
-          this.containerWidth = window.innerWidth - 16;
-        }
-        this.firstChild.style.width = (this.containerWidth-this.padding) + "px";
-
-        if (this.pb) {
-          var target = this;
-          var u = this.pb.thumbnailURL(target);
-          this.setAttribute("thumbnail-photo", this.pb.thumbnailURL(target));
-          if (u.match(/(twitvid|youtube|youtu\.be)/)) {
-            document.getAnonymousElementByAttribute(this, "anonid", "video-playback-icon").style.display = "block";
-          }
-        }
-      </constructor>
-
-      <property name="border">
-	<setter>
-	  this.setAttribute("border", val);
-	</setter>
-      </property>
-
-      <method name="doRetweet">
-        <parameter name="tweet"/>
-        <body>
-        <![CDATA[
-          for (var i = 0; i < this.childNodes.length; ++i) {
-            var e = this.childNodes[i];
-            if (e.tagName == 'echofon-status-retweet-status') {
-              this.removeChild(e);
-              break;
-            }
-          }
-          var rt = document.createElement("echofon-status-retweet-status");
-          var fontSize = EchofonCommon.fontSize();
-          rt.style.fontSize = (fontSize - 1) + "px";
-          var rtby = EchofonCommon.createAnchorText(EchofonCommon.twitterURL(tweet.retweeter_screen_name), EchofonCommon.getString("you"));
-          EchofonCommon.formatTextNode(rt, "retweetedBy", rtby);
-          rt.id = "retweet-status-" + this.tweet.id;
-          this.appendChild(rt);
-          this.setAttribute("is_own_retweet", true);
-          this.tweet = tweet;
-        ]]>
-        </body>
-      </method>
-
-      <method name="undoRetweet">
-        <parameter name="tweet"/>
-        <body>
-        var rt = document.getElementById("retweet-status-" + this.tweet.id);
-        if (rt) {
-          rt.parentNode.removeChild(rt);
-        }
-        this.removeAttribute("is_own_retweet");
-        this.tweet = tweet;
-        </body>
-      </method>
-
-      <method name="setFavorited">
-        <parameter name="val"/>
-        <body>
-          this.setAttribute("requestFavorite", false);
-          this.setAttribute("favorited", val);
-          this.setAttribute("favoriteButtonTooltip", EchofonCommon.getString(val ? "UnfavoriteTweet" : "FavoriteTweet"));
-          var favorite = document.getAnonymousElementByAttribute(this, "anonid", "favorite");
-	  favorite.style.display = (val) ? "block" : "none";
-        </body>
-      </method>
-
-      <method name="openPhoto">
-        <parameter name="event"/>
-	<body>
-          var url = this.getAttribute("status-photo");
-          var win = EchofonCommon.isWindowExist(url);
-          if (win) {
-            win.focus();
-          }
-          else {
-            if (this.pb.media == EchofonPhotoBackend.MEDIA_TYPE_VIDEO) {
-              EchofonCommon.openURL(url, event);
-            }
-            else {
-              EchofonCommon.openPhotoView(this.pb);
-            }
-          }
-	</body>
-      </method>
-
-      <method name="loadImage">
-	<parameter name="url"/>
-	<body>
-            this.setAttribute("thumbnail-photo", url);
-	</body>
-      </method>
-
-      <method name="toggleFavorite">
-        <body>
-          this.setAttribute("requestFavorite", true);
-          var messageId = this.getAttribute("messageId");
-          var method;
-          if (this.getAttribute("favorited") != "true") {
-            method = "create";
-          }
-          else {
-            method = "destroy";
-          }
-          EchofonCommon.notify("setFavorite",{id: messageId, method: method});
-        </body>
-      </method>
-
-    </implementation>
-
   </binding>
 
   <!--

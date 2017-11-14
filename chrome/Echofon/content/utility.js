@@ -3,11 +3,20 @@
 //
 // Copyright (c) 2009-2010 Kazuho Okui / naan studio, Inc. ALL RIGHTS RESERVED.
 //
+import { createElement as e } from 'react';
+import ReactDOM from 'react-dom';
+import { substring, length } from 'stringz'; // emoji breaks string manipulation
 
-if (typeof EchofonCommon == 'undefined') {
+import AnchorText from '../../../src/components/AnchorText';
+import TweetCell from '../../../src/components/TweetCell';
 
 Components.utils.import("resource://echofon/PhotoBackend.jsm");
-var EchofonCommon = {
+
+function getString(key) {
+  return document.getElementById("echofon-strings").getString(key).replace(/\\S/g, " ");
+}
+
+export var EchofonCommon = {
 
   FFVersion: 0,
 
@@ -99,182 +108,13 @@ var EchofonCommon = {
   },
 
   createTweetCell: function(uid, tweet, highlighted) {
-    if (document.getElementById("echofon-status-" + tweet.type + "-" + tweet.id)) return null;
-    var elem = document.createElement("echofon-status");
-    elem.id = "echofon-status-" + tweet.type + "-" + tweet.id;
-    elem.setAttribute("messageId", tweet.id);
-    elem.setAttribute("type", tweet.type);
-    if (tweet.retweeted_status_id) {
-      elem.createdAt   = new Date(tweet.retweeted_at).getTime();
-    }
-    else {
-      elem.createdAt   = new Date(tweet.created_at).getTime();
-    }
-    elem.unread      = tweet.unread;
-    elem.tweet       = tweet;
-    elem.uid         = uid;
-    elem.user        = tweet.user;
-    elem.highlighted = highlighted;
-    elem.appMode   = EchofonCommon.pref().getCharPref("applicationMode");
+    const id = "echofon-status-" + tweet.type + "-" + tweet.id;
+    if (document.getElementById(id)) return null;
 
-    try{
-      elem.setAttribute("messageId", elem.tweet.id);
-      var fontSize = EchofonCommon.fontSize();
-      if (!elem.getAttribute("user-timeline")) {
-        elem.setAttribute("mode", elem.appMode);
-      }
-      elem.style.fontSize = fontSize + "px";
-      elem.style.fontFamily = EchofonCommon.pref().getCharPref("fontFace");
+    const container = document.createElement('box');
+    ReactDOM.render(<TweetCell uid={uid} id={id} tweet={tweet} highlighted={highlighted} />, container);
 
-
-      var msg = elem.tweet;
-      var user = elem.user;
-
-      elem.setAttribute("profile_image_url", user.profile_image_url);
-
-      elem.setAttribute("href", EchofonCommon.userViewURL(user.screen_name));
-
-      elem.setAttribute("replyButtonTooltip", EchofonCommon.getFormattedString("ReplyTo", [elem.user.screen_name]));
-      elem.setAttribute("screen_name", user.screen_name);
-      if (user.id == elem.uid) {
-        elem.setAttribute('is_own_tweet', true);
-      }
-
-      elem.setAttribute("name", user.name);
-
-      elem.setAttribute("requestFavorite", false);
-      elem.setAttribute("favorited", msg.favorited);
-      elem.setAttribute("favoriteButtonTooltip", EchofonCommon.getString(msg.favorited ? "UnfavoriteTweet" : "FavoriteTweet"));
-      elem.setAttribute("isFavorited", (msg.favorited) ? "block" : "none");
-
-      var style = this.pref().getIntPref("displayStyle");
-      var nameNode =  null;
-      if (style == 0) {
-            nameNode = document.createElement('description');
-            nameNode.className = "echofon-status-body";
-            var anchor = this.createAnchorText(this.userViewURL(user.screen_name), user.name, "username");
-            anchor.setAttribute("screen_name", user.screen_name);
-            anchor.className += " echofon-status-user";
-            nameNode.appendChild(anchor);
-
-            var screenName = this.createAnchorText(this.userViewURL(user.screen_name), "@" + user.screen_name, "username");
-            screenName.className = "echofon-status-additional-screen-name";
-            if (msg.type != 'user-timeline') {
-              screenName.style.fontSize = (fontSize - 1) + "px";
-            }
-            nameNode.appendChild(screenName);
-      }
-
-      var textnode = EchofonCommon.buildRichTextNode(uid, msg, user, elem);
-      textnode.className = "echofon-status-body";
-      elem.setAttribute("text", msg.full_text);
-      elem.setAttribute("protected", user.protected ? 1 : 0);
-      if (msg.has_mention && msg.type == 'home') {
-        elem.setAttribute("highlighted", true);
-      }
-
-      var info = document.createElement("echofon-status-tagline");
-      info.style.fontSize = (fontSize - 1) + "px";
-
-      var permalink = (msg.retweeted_status_id) ? msg.retweeted_status_id : msg.id;
-
-      if (msg.metadata && msg.metadata.result_type == "popular") {
-        var topTweet = document.createElement("description");
-        topTweet.appendChild(document.createTextNode("Top Tweet"));
-        topTweet.className = "echofon-top-tweet";
-        info.appendChild(topTweet);
-      }
-
-      var label = EchofonCommon.getLocalTimeForDate(msg.created_at, elem.appMode != 'window' && msg.type != 'user-timeline');
-      var time = EchofonCommon.createAnchorText(EchofonCommon.twitterURL(user.screen_name + "/statuses/" + permalink),
-                                                label,
-                                                "link",
-                                                "echofon-status-timestamp");
-      time.created_at = new Date(msg.created_at).getTime();
-      time.label = label;
-      info.appendChild(time);
-      info.style.display = "block";
-      if (msg.source) {
-        if (msg.source.match(/<a href\=\"([^\"]*)\"[^>]*>(.*)<\/a>/)) {
-          var source = EchofonCommon.createAnchorText(RegExp.$1, RegExp.$2, "app", "echofon-source-link");
-          EchofonCommon.formatTextNode(info, "via", source);
-        }
-      }
-      if (msg.place) {
-        if (elem.appMode == "window") {
-          info.appendChild(document.createTextNode(EchofonCommon.getFormattedString("from", [msg.place.full_name])));
-        }
-        else {
-          var icon = document.createElement("image");
-          icon.className = "echofon-place-icon";
-          var text = document.createTextNode(msg.place.full_name);
-          info.appendChild(icon);
-          info.appendChild(text);
-        }
-      }
-      if (msg.in_reply_to_status_id && msg.in_reply_to_screen_name) {
-        if (elem.appMode == "window" || msg.type == 'user-timeline') {
-          var reply = EchofonCommon.createAnchorText(EchofonCommon.twitterURL(msg.in_reply_to_screen_name + "/statuses/" + msg.in_reply_to_status_id),
-                                                     EchofonCommon.getFormattedString("inReplyToInline", [msg.in_reply_to_screen_name]),
-                                                     "tweet-popup",
-                                                     "echofon-source-link echofon-source-link-left-padding");
-          info.appendChild(reply);
-        }
-        else {
-          var icon = document.createElement("image");
-          icon.className = "echofon-in-reply-to-icon";
-          var text = document.createTextNode(msg.in_reply_to_screen_name);
-          var reply = EchofonCommon.createAnchorWithElements(EchofonCommon.twitterURL(msg.in_reply_to_screen_name + "/statuses/" + msg.in_reply_to_status_id),
-                                                             [icon, text],
-                                                             "tweet-popup",
-                                                             "echofon-source-link");
-          info.appendChild(reply);
-        }
-      }
-      /*
-      if (msg.metadata && msg.metadata.result_type == "popular") {
-        if (msg.metadata.recent_retweets) {
-          var recentRT = document.createElement("description");
-          recentRT.appendChild(document.createTextNode(", retweeted " + msg.metadata.recent_retweets + " times"));
-          recentRT.className = "echofon-top-tweet-retweets";
-          info.appendChild(recentRT);
-        }
-      }
-      */
-
-      if (nameNode) {
-        elem.appendChild(nameNode);
-      }
-
-      elem.appendChild(textnode);
-      elem.appendChild(info);
-
-      if (msg.retweeted_status_id > 0) {
-        var rt = document.createElement("echofon-status-retweet-status");
-
-        var rt_icon = document.createElement("image");
-        rt_icon.className = "echofon-retweet-icon";
-        rt.appendChild(rt_icon);
-
-        rt.setAttribute("anonid", "retweet");
-        rt.style.fontSize = (fontSize - 1) + "px";
-        var nameLabel;
-        if (msg.retweeter_user_id == uid) {
-          nameLabel = EchofonCommon.getString("you");
-          elem.setAttribute("is_own_retweet", true);
-        }
-        else {
-          nameLabel = msg.retweeter_screen_name;
-        }
-        var rtby = EchofonCommon.createAnchorText(EchofonCommon.userViewURL(msg.retweeter_screen_name), nameLabel, "username");
-        EchofonCommon.formatTextNode(rt, "retweetedBy", rtby);
-        elem.appendChild(rt);
-      }
-    }catch (e) {
-      dump(e.message+":"+e.fileName+":"+e.lineNumber+"\n");
-    }
-
-    return elem;
+    return container.firstChild;
   },
 
   findStatusElement: function(tweet_id) {
@@ -411,43 +251,21 @@ var EchofonCommon = {
     //
     // sort entities.
     //
-    var entities = [];
-    if (msg.entities) {
-      for (var i in msg.entities) {
-        if (msg.entities.hasOwnProperty(i)) {
-          var key = i;
-          for (var j in msg.entities[key]) {
-            if (msg.entities[key].hasOwnProperty(j)) {
-              var value = msg.entities[key][j];
-              entities.push({'type':key, 'value':value})
-            }
-          }
-        }
-      }
-    }
-    function sort_entities(a,b) {
-      var aa = a.value.indices[0];
-      var bb = b.value.indices[0];
-      return aa - bb;
-    }
-
-    entities.sort(sort_entities);
+    const entities = Object.entries(msg.entities)
+      .reduce(
+        (prev, [type, value]) =>
+          prev.concat(value.map(entity => ({ type, value: entity }))),
+        []
+      )
+      .sort((a, b) => a.value.indices[0] - b.value.indices[0]);
 
     //
     // building tweet with urls, mentions and hashtags.
     //
-    function unescape(a) {
-      var escape = Cc["@mozilla.org/feed-unescapehtml;1"].getService(Ci.nsIScriptableUnescapeHTML);
-      if (a[0] == ' ') {
-        return ' ' + escape.unescape(a);
-      }
-      else {
-        return escape.unescape(a);
-      }
-    }
 
     var index = 0;
     var text = msg.full_text || msg.text;
+    var elements = [];
     for (var i in entities) {
       if (!entities.hasOwnProperty(i)) continue;
       var type = entities[i]['type'];
@@ -457,11 +275,11 @@ var EchofonCommon = {
       var end   = entity['indices'][1];
       if (start < index || end < start) continue;
 
-      var left = text.substring(index, start);
+      var left = substring(text, index, start);
       if (left) {
-        elem.appendChild(document.createTextNode(unescape(left)));
+        elements.push(document.createTextNode(left));
       }
-      var linked_text = unescape(text.substring(start, end));
+      var linked_text = substring(text, start, end);
       var a;
       switch (type) {
         case "urls":
@@ -505,12 +323,15 @@ var EchofonCommon = {
         default:
           break;
       }
-      elem.appendChild(a);
+      elements.push(a);
       index = entity['indices'][1];
     }
-    if (text && index < text.length) {
-      elem.appendChild(document.createTextNode(unescape(text.substring(index, text.length))));
+    if (text && index < length(text)) {
+      elements.push(document.createTextNode(substring(text, index, length(text))));
     }
+
+    elements.forEach(e => elem.appendChild(e));
+
     return elem;
   },
 
@@ -534,8 +355,8 @@ var EchofonCommon = {
       text = RegExp.rightContext;
 
       var followed = '';
-      if (leftContext.length) {
-        followed = leftContext[leftContext.length-1];
+      if (length(leftContext)) {
+        followed = leftContext[length(leftContext)-1];
         var pat2 = /[A-Za-z0-9]/;
         if (pat2.test(followed)) {
           elem.appendChild(document.createTextNode(leftContext + matched));
@@ -573,18 +394,6 @@ var EchofonCommon = {
       anchor.setAttribute("tooltip", 'echofon-tooltip');
 
       anchor.appendChild(document.createTextNode(text));
-
-      return anchor;
-  },
-
-  createAnchorWithElements: function(link, elems, type, classname) {
-      var anchor = document.createElement("a");
-      anchor.className = classname ? classname : "echofon-hyperlink";
-      anchor.setAttribute("href", link);
-      anchor.setAttribute("type", type);
-      for (var i = 0; i < elems.length; ++i) {
-        anchor.appendChild(elems[i]);
-      }
 
       return anchor;
   },
@@ -930,6 +739,20 @@ var EchofonCommon = {
     return node;
   },
 
+  formatText: function({ children, type }) {
+    const text = getString(type);
+
+    // for single value
+    let arr = text.split(/(%S)/);
+    if (arr.length > 1) {
+      arr[1] = children;
+      return arr;
+    }
+
+    // for multiple values
+    return text.split(/%(\d)\$S/).map((chunk, i) => ((i % 2) && children[parseInt(chunk)-1]) || chunk);
+  },
+
   // OAuth
   //
   startOAuth: function(screen_name, callback) {
@@ -998,13 +821,12 @@ var EchofonCommon = {
     return EchofonCommon.pref().getIntPref("fontSize");
   },
 
-  Cc: this.Components.classes,
-  Ci: this.Components.interfaces
+  Cc: Components.classes,
+  Ci: Components.interfaces
 
 };
-}
 
-function echofonObserver()
+export function echofonObserver()
 {
   Components.classes["@mozilla.org/observer-service;1"].getService(Components.interfaces.nsIObserverService).addObserver(this, "echofon-status", false);
 }
