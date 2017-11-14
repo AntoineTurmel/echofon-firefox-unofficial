@@ -314,6 +314,10 @@ var EchofonCommon = {
     textelem.className = "echofon-message-body echofon-conversation-body";
 
     if (msg.entities) {
+	  var style = this.pref().getIntPref("displayStyle");
+      if (style != 0) {
+        elem.appendChild(document.createTextNode('\n'));
+      }
       this.convertLinksWithEntities(uid, msg, textelem, elem);
     }
     else {
@@ -365,6 +369,9 @@ var EchofonCommon = {
       }
 
     if (msg.entities) {
+	  if (style != 0) {
+        elem.appendChild(document.createTextNode('\n'));
+      }
       return this.convertLinksWithEntities(uid, msg, elem, parent_elem);
     }
     else {
@@ -459,7 +466,16 @@ var EchofonCommon = {
 
       var left = text.substring(index, start);
       if (left) {
-        elem.appendChild(document.createTextNode(unescape(left)));
+		var split_left = left.split('\n');
+        if(split_left.length) {
+          for(var j = 0; j < split_left.length - 1; j++) {
+            elem.appendChild(document.createTextNode(unescape(split_left[j])+"\n"));
+          }
+          elem.appendChild(document.createTextNode(unescape(split_left[split_left.length - 1])));
+        }
+        else {
+          elem.appendChild(document.createTextNode(unescape(left)));
+        }
       }
       var linked_text = unescape(text.substring(start, end));
       var a;
@@ -509,7 +525,17 @@ var EchofonCommon = {
       index = entity['indices'][1];
     }
     if (text && index < text.length) {
-      elem.appendChild(document.createTextNode(unescape(text.substring(index, text.length))));
+      var rest_text = text.substring(index, text.length);
+      var split_rest_text = rest_text.split('\n');
+      if(split_rest_text.length) {
+        for(var i = 0; i < split_rest_text.length - 1; i++) {
+          elem.appendChild(document.createTextNode(unescape(split_rest_text[i])+"\n"));
+        }
+        elem.appendChild(document.createTextNode(unescape(split_rest_text[split_rest_text.length - 1])));
+      }
+      else {
+        elem.appendChild(document.createTextNode(unescape(text.substring(index, text.length))));
+      }
     }
     return elem;
   },
@@ -559,7 +585,13 @@ var EchofonCommon = {
       pat.lastIndex = 0;
     }
     if (text) {
-      elem.appendChild(document.createTextNode(text));
+      var split_text = text.split('\n');
+      if(split_text.length) {
+        for(var i = 0; i < split_text.length - 1; i++) {
+          elem.appendChild(document.createTextNode(unescape(split_text[i])+"\n"));
+        }
+        elem.appendChild(document.createTextNode(unescape(split_text[split_text.length - 1])));
+      }
     }
   },
 
