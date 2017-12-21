@@ -31,7 +31,7 @@
                  group="sidebar"
                  sidebarurl="chrome://echofon/content/sidebar.xul"
                  sidebartitle="Echofon"
-                 oncommand="toggleSidebar('viewEchofonSidebar');" />
+                 oncommand="SidebarUI.toggle('viewEchofonSidebar');" />
   </broadcasterset>
 
 

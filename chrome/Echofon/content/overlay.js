@@ -593,7 +593,7 @@ var EchofonOverlay = {
     break;
 
       case "sidebar":
-        toggleSidebar('viewEchofonSidebar', true);
+        SidebarUI.show('viewEchofonSidebar');
     }
   },
 
@@ -626,7 +626,7 @@ var EchofonOverlay = {
     break;
 
       case "sidebar":
-        toggleSidebar('viewEchofonSidebar', false);
+        SidebarUI.toggle('viewEchofonSidebar');
     break;
     }
   },
@@ -646,7 +646,7 @@ var EchofonOverlay = {
       case "sidebar":
       var sidebarWindow = document.getElementById("sidebar").contentWindow;
       if (sidebarWindow.location.href == "chrome://echofon/content/sidebar.xul") {
-        toggleSidebar();
+        SidebarUI.hide();
       }
       break;
     }
@@ -657,7 +657,7 @@ var EchofonOverlay = {
       this.closePanel();
     }
     else {
-      toggleSidebar('viewEchofonSidebar');
+      SidebarUI.toggle('viewEchofonSidebar');
     }
   },
 
@@ -802,7 +802,7 @@ var EchofonOverlay = {
     var sidebar = document.getElementById("sidebar");
     if (sidebar && sidebar.contentWindow) {
       if (sidebar.contentWindow.location.href == "chrome://echofon/content/sidebar.xul") {
-        toggleSidebar('viewEchofonSidebar');
+        SidebarUI.toggle('viewEchofonSidebar');
       }
     }
     this.closePanel();
